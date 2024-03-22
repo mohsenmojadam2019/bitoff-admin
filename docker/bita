@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+
+if ! [ -x "$(command -v docker)" ]; then
+    echo 'docker is not installed. Please install it first.'
+    exit 1
+fi
+
+if ! docker info >/dev/null 2>&1; then
+    echo 'docker is not running.' >&2
+
+    exit 1
+fi
+
+if ! [ -x "$(command -v docker-compose)" ]; then
+    shopt -s expand_aliases
+    alias docker-compose='docker compose'
+fi
+
+if [ -f .env ]; then
+    . .env
+fi
+
+. .env.development
+
+export WWWUSER=${WWWUSER:-$(id -u)}
+export WWWGROUP=${WWWGROUP:-$(id -g)}
+
+if [ $# -gt 0 ]; then
+    # Proxy PHP commands to the "php" binary on the application container...
+    if [ "$1" == "php" ]; then
+        shift 1
+
+        docker-compose exec \
+            -u bita \
+            bitoff-admin \
+            php "$@"
+
+    # Proxy vendor binary commands on the application container...
+    elif [ "$1" == "bin" ]; then
+        shift 1
+
+        bin="$1"
+        shift 1
+
+        docker-compose exec \
+            -u bita \
+            bitoff-admin \
+            "./vendor/bin/$bin" "$@"
+
+    # Proxy Composer commands to the "composer" binary on the application container...
+    elif [ "$1" == "composer" ]; then
+        shift 1
+
+        docker-compose exec \
+            -u bita \
+            bitoff-admin \
+            composer "$@"
+
+    # Proxy Artisan commands to the "artisan" binary on the application container...
+    elif [ "$1" == "phpunit" ] || [ "$1" == "pu" ]; then
+        shift 1
+
+        docker-compose exec \
+            -u bita \
+            bitoff-admin \
+            php ./vendor/bin/phpunit "$@"
+
+    # Proxy Artisan commands to the "artisan" binary on the application container...
+    elif [ "$1" == "coverage" ] || [ "$1" == "cov" ]; then
+        shift 1
+
+        docker-compose exec \
+            -u bita \
+            bitoff-admin \
+            php -dxdebug.mode=coverage vendor/bin/phpunit --coverage-html reports "$@"
+
+    # Proxy Artisan commands to the "artisan" binary on the application container...
+    elif [ "$1" == "artisan" ] || [ "$1" == "art" ]; then
+        shift 1
+
+        docker-compose exec \
+            -u bita \
+            bitoff-admin \
+            php artisan "$@"
+
+    # Initiate a Laravel Tinker session within the application container...
+    elif [ "$1" == "tinker" ]; then
+        shift 1
+
+        docker-compose exec \
+            -u bita \
+            bitoff-admin \
+            php artisan tinker "$@"
+
+    # Initiate a npm CLI terminal session within the "bitoff-admin" container...
+    elif [ "$1" == "npm" ]; then
+        shift 1
+
+        docker-compose exec bitoff-admin npm "$@"
+
+    # Initiate a Bash shell within the application container...
+    elif [ "$1" == "shell" ] || [ "$1" == "bash" ]; then
+        shift 1
+
+        docker-compose exec \
+            -u bita \
+            bitoff-admin \
+            bash "$@"
+
+    # Initiate a root user Bash shell within the application container...
+    elif [ "$1" == "root-shell" ]; then
+        shift 1
+
+        docker-compose exec -u root bitoff-admin bash "$@"
+
+    # Pass unknown commands to the "docker-compose" binary...
+    else
+        docker-compose "$@"
+    fi
+else
+    docker-compose ps
+fi

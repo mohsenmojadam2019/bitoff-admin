@@ -1,0 +1,49 @@
+stages:
+  - update
+  - composer
+
+admin-update:
+  stage: update
+  script:
+    - cd /var/www/subkhoune
+    - git pull
+    - composer dump-autoload
+  only:
+    - master
+  tags:
+    - admin
+  when: manual
+
+admin-composer:
+  stage: composer
+  tags:
+    - admin
+  script:
+    - cd /var/www/subkhoune
+    - composer install --no-dev
+  when: manual
+  only:
+    - master
+
+stage-update:
+  stage: update
+  tags:
+    - stage
+  script:
+    - cd /var/www/admin
+    - sudo git pull
+    - composer dump-autoload
+  when: manual
+  only:
+    - develop
+
+stage-composer:
+  stage: composer
+  tags:
+    - stage
+  script:
+    - cd /var/www/admin
+    - composer install --no-dev
+  when: manual
+  only:
+    - develop

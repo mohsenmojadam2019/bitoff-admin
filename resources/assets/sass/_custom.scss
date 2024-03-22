@@ -1,0 +1,9 @@
+@for $i from 5 through 60 {
+    .font-#{$i} {
+        font-size: #{$i}px !important;
+    }
+}
+
+.nav-sidebar > .nav-item .nav-icon {
+    margin-right: 0.6rem;
+}

@@ -1,0 +1,39 @@
+version: "3.7"
+
+services:
+  bitoff-admin:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+      args:
+        BUILD_ENV: development
+        WWWUSER: ${WWWUSER}
+        WWWGROUP: ${WWWGROUP}
+    image: local/bitoff-admin/api:new
+    restart: unless-stopped
+    volumes:
+      - .:/app
+    networks:
+      - api_bitoff
+
+  bitoff-admin-nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - .:/app:ro
+    ports:
+      - target: 80
+        published: 8001
+        mode: host
+        protocol: tcp
+    depends_on:
+      - bitoff-admin
+    networks:
+      api_bitoff:
+        aliases:
+          - s3.bitoff-admin.test
+
+networks:
+  api_bitoff:
+    external: true
